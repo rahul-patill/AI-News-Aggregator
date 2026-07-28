@@ -97,3 +97,7 @@ app/alembic/versions/*
 playground/*.png
 
 app/google-service-account.json
+
+# Personal Notes
+for my knowledge.md
+for_my_knowledge.md
