@@ -7,10 +7,8 @@ databases:
 services:
   - type: cron
     name: ai-news-daily-job
-    env: python
+    env: docker
     schedule: "0 8 * * *" # Runs every day at 8:00 AM UTC
-    buildCommand: "curl -LsSf https://astral.sh/uv/install.sh | sh && $HOME/.local/bin/uv sync"
-    startCommand: "$HOME/.local/bin/uv run python -m app.database.create_tables && $HOME/.local/bin/uv run python main.py"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
