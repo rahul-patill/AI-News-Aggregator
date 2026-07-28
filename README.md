@@ -123,11 +123,11 @@ HUMAN IN THE LOOP
 STATE MANAGEMENT
   - The Repository (`app/database/repository.py`) saves state at every single step.
   - If the API crashes on step 3, the next cron job resumes exactly at step 3.
+```
 
 ### Database State Tracking
 ![Digest Database View](https://github.com/user-attachments/assets/9d5b27c2-e470-4e3f-98b8-af6c63451ee6)
 ![OpenAI Database View](https://github.com/user-attachments/assets/eda80c04-4f61-4cbc-a214-b5bcf04a6fab)
-```
 
 ---
 
