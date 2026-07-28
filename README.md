@@ -100,3 +100,18 @@ python -m app.services.process_digest
 # Only run the personalized curator
 python -m app.services.process_curator
 ```
+
+---
+
+## ☁️ Cloud Deployment (Render)
+
+This project includes a `render.yaml` file for zero-touch cloud deployment using [Render](https://render.com). It spins up a free-tier Managed PostgreSQL database and a Cron Job that executes the pipeline automatically every 24 hours.
+
+1. Create a free account on [Render](https://render.com).
+2. Go to your Render Dashboard and click **New** -> **Blueprint**.
+3. Connect your GitHub repository.
+4. Render will automatically detect the `render.yaml` file.
+5. In the Render Dashboard, you will be prompted to fill in your 3 environment variables: `GEMINI_API_KEY`, `MY_EMAIL`, and `APP_PASSWORD`.
+6. Click **Apply**. 
+
+Render will instantly build your database and schedule the `main.py` task to run daily!

@@ -6,6 +6,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_database_url() -> str:
+    # Render and other cloud providers inject DATABASE_URL automatically
+    if os.getenv("DATABASE_URL"):
+        return os.getenv("DATABASE_URL")
+        
     user = os.getenv("POSTGRES_USER", "postgres")
     password = os.getenv("POSTGRES_PASSWORD", "postgres")
     host = os.getenv("POSTGRES_HOST", "localhost")
