@@ -2,6 +2,8 @@
 
 ## Demo
 
+![Final Email Output](https://github.com/user-attachments/assets/6913488b-ffdf-488d-b027-e679a4bbd153)
+
 ▶ [Watch the deployment in action](https://github.com/) *(Placeholder for future demo link)*
 
 ---
@@ -121,6 +123,10 @@ HUMAN IN THE LOOP
 STATE MANAGEMENT
   - The Repository (`app/database/repository.py`) saves state at every single step.
   - If the API crashes on step 3, the next cron job resumes exactly at step 3.
+
+### Database State Tracking
+![Digest Database View](https://github.com/user-attachments/assets/9d5b27c2-e470-4e3f-98b8-af6c63451ee6)
+![OpenAI Database View](https://github.com/user-attachments/assets/eda80c04-4f61-4cbc-a214-b5bcf04a6fab)
 ```
 
 ---
@@ -158,6 +164,8 @@ This project is configured for one-click Infrastructure-as-Code deployment via R
 2. Select **New** -> **Blueprint**.
 3. Render reads `render.yaml`, provisions a free Postgres Database, and schedules the daily Cron Job (using a custom `Dockerfile` to guarantee environment consistency).
 
+![Render Dashboard Deployment](https://github.com/user-attachments/assets/7217dc57-a97f-4571-aa16-ff567576d46a)
+
 ---
 
 ## Sample Interactions
@@ -181,6 +189,10 @@ SCORE: 2.1 (Low relevance - Consumer App)
 INPUT (Digest): "How to deploy Llama 3 on Kubernetes using vLLM."
 SCORE: 9.8 (High relevance - MLOps/Deployment)
 ```
+
+### Automated Execution Logs
+![Render Log Output 1](https://github.com/user-attachments/assets/13777c65-2662-4113-adb6-3a409e6f5572)
+![Render Log Output 2](https://github.com/user-attachments/assets/55041d1d-97ff-4692-a199-261ab57fac01)
 
 ---
 
