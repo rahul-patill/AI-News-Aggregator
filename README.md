@@ -11,7 +11,7 @@ An intelligent, fully-automated news aggregation pipeline that scrapes the web f
 ## ✨ Features
 
 - **Multi-Source Scraping**: Automatically monitors RSS feeds (OpenAI, Anthropic) and YouTube channels.
-- **Deep Content Extraction**: Uses `docling` to strip away web clutter and extract pure Markdown from articles, and `youtube_transcript_api` to securely fetch hidden closed captions from videos.
+- **Deep Content Extraction**: Uses the `Jina Reader API` to fetch pure Markdown from web articles with zero memory footprint, and `youtube_transcript_api` to securely fetch hidden closed captions from videos. (Note: Originally built with `docling`, but migrated to Jina to eliminate Out-Of-Memory errors on Render's 512MB free tier).
 - **AI Summarization**: Leverages `gemini-2.5-flash` to read thousands of words of technical documentation and compress them into actionable 2-3 sentence summaries.
 - **Personalized Curation**: Analyzes your specific user profile (background, expertise, and interests) to rank articles from 1 to 10 based on how relevant they are to *you*.
 - **Automated Newsletter**: Assembles the top-ranked articles into a beautiful HTML email with an AI-generated personalized greeting.

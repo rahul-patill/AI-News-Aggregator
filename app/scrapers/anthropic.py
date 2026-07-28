@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 import feedparser
-from docling.document_converter import DocumentConverter
+import requests
 from pydantic import BaseModel
 
 
@@ -21,7 +21,6 @@ class AnthropicScraper:
             "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_research.xml",
             "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_engineering.xml",
         ]
-        self.converter = DocumentConverter()
 
     def get_articles(self, hours: int = 24) -> List[AnthropicArticle]:
         now = datetime.now(timezone.utc)
@@ -57,9 +56,14 @@ class AnthropicScraper:
 
     def url_to_markdown(self, url: str) -> Optional[str]:
         try:
-            result = self.converter.convert(url)
-            return result.document.export_to_markdown()
-        except Exception:
+            # We use Jina Reader API to convert the URL to Markdown
+            # This is extremely memory efficient compared to running local ML models
+            response = requests.get(f"https://r.jina.ai/{url}")
+            if response.status_code == 200:
+                return response.text
+            return None
+        except Exception as e:
+            print(f"Error fetching markdown from Jina: {e}")
             return None
 
 if __name__ == "__main__":
