@@ -1,117 +1,250 @@
-# 🤖 AI News Aggregator
+# AI News Aggregator — Personalized AI Curator
 
-![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Gemini](https://img.shields.io/badge/AI-Google_Gemini-orange)
+## Demo
 
-An intelligent, fully-automated news aggregation pipeline that scrapes the web for the latest AI research and news, summarizes it using Google's Gemini models, and delivers a highly personalized daily newsletter directly to your inbox.
+▶ [Watch the deployment in action](https://github.com/) *(Placeholder for future demo link)*
 
 ---
 
-## ✨ Features
+## Title and Summary
 
-- **Multi-Source Scraping**: Automatically monitors RSS feeds (OpenAI, Anthropic) and YouTube channels.
-- **Deep Content Extraction**: Uses the `Jina Reader API` to fetch pure Markdown from web articles with zero memory footprint, and `youtube_transcript_api` to securely fetch hidden closed captions from videos. (Note: Originally built with `docling`, but migrated to Jina to eliminate Out-Of-Memory errors on Render's 512MB free tier).
-- **AI Summarization**: Leverages `gemini-2.5-flash` to read thousands of words of technical documentation and compress them into actionable 2-3 sentence summaries.
-- **Personalized Curation**: Analyzes your specific user profile (background, expertise, and interests) to rank articles from 1 to 10 based on how relevant they are to *you*.
-- **Automated Newsletter**: Assembles the top-ranked articles into a beautiful HTML email with an AI-generated personalized greeting.
-- **Resilient Architecture**: Uses the Repository Pattern with PostgreSQL to save state at every micro-step, ensuring no API calls are wasted if the pipeline crashes.
+The **AI News Aggregator** is an autonomous, agentic data pipeline that acts as your personal research assistant. Instead of manually scrolling through RSS feeds, tech blogs, and YouTube videos to keep up with the overwhelming pace of AI advancements, this system reads everything for you. 
 
----
+It takes thousands of words of deep technical documentation (from sources like OpenAI and Anthropic) and hour-long YouTube videos, compresses them into concise summaries using **Gemini-2.5-Flash**, and then mathematically ranks them based on your personalized `user_profile.py`. Finally, it writes a custom HTML newsletter and emails it directly to you every morning.
 
-## 🛠️ Tech Stack
-
-- **Core**: Python 3.12+
-- **AI Models**: Google GenAI SDK (`gemini-2.5-flash`)
-- **Database**: PostgreSQL (containerized via Docker) & SQLAlchemy (ORM)
-- **Data Extraction**: BeautifulSoup4, Docling, YouTube Transcript API
-- **Package Management**: `uv`
+This matters because the sheer volume of AI news is impossible to keep up with manually. This system ensures you only read what actually matters to your specific career and interests.
 
 ---
 
-## 🏗️ Application Data Flow (How It Works)
+## Original Workflow vs. AI System
 
-If you are trying to understand the exact sequence of events when the application runs, here is the complete top-to-bottom pipeline:
+Before this system, staying updated meant manually checking multiple websites, reading dense 5,000-word research papers, and scrubbing through YouTube videos to find the relevant 2 minutes of information.
 
-1. **The Trigger (`main.py`)**: The entry point. You run `python main.py`, and it hands control to the orchestrator.
-2. **The Orchestrator (`app/daily_runner.py`)**: Manages the 6 sequential steps so they run in perfect order.
-3. **Step 1 (Scraping)**: Reaches out to RSS feeds and YouTube to grab raw URLs and basic metadata.
-4. **Step 2 & 3 (Deep Extraction)**: Visits actual web pages and APIs to download massive full-text Markdown and video transcripts.
-5. **Step 4 (AI Summarization)**: The Gemini AI acts as an analyst, compressing the massive text into 2-3 sentence summaries.
-6. **Step 5 (Curation & Ranking)**: The Curator Agent reads your personal profile and ranks all the daily summaries by assigning a relevance score (0.0 to 10.0).
-7. **Step 6 (Final Delivery)**: The Email Agent takes the Top 10 highest-ranked articles, writes a warm introduction, formats everything into HTML, and fires it off via SMTP.
+### What Changed: From Manual to Autonomous
 
-> 🗄️ **The Backbone**: Throughout every single step above, the code constantly talks to `app/database/repository.py`. The repository acts as a librarian, saving state at every micro-step (Idempotency) so that if the power goes out, the app picks up exactly where it left off!
+| Original Workflow | AI Aggregator |
+|---|---|
+| Manual bookmark checking | Automated daily scraping via Render Cron Job |
+| Reading full web pages | Jina Reader API extracts pure Markdown |
+| Scrolling through fluff | Gemini AI compresses into 3-sentence digests |
+| Chronological reading | Semantic ranking based on personal profile |
+| Forgetting what was read | Full PostgreSQL database tracking |
+| Zero notification | Beautiful HTML email delivery |
 
 ---
 
-## 🚀 Getting Started
+## System Architecture
 
-### 1. Prerequisites
+### Component Diagram
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                     RENDER CLOUD (Cron Job)                     │
+│               Fires every 24 hours at 8:00 AM UTC               │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                       FASTAPI / PYTHON APP                      │
+│                                                                 │
+│  ┌─────────────┐    ┌──────────────┐    ┌──────────────────┐    │
+│  │ Scrapers    │    │ Extraction   │    │  Digest Agent    │    │
+│  │ (RSS / YT)  │    │ (Jina API)   │    │  (Gemini LLM)    │    │
+│  │ fetch URLs  │    │ HTML → MD    │    │ MD → Summary     │    │
+│  └──────┬──────┘    └──────┬───────┘    └────────┬─────────┘    │
+│         └──────────────────┴─────────────────────┘              │
+│                            │                                    │
+│                            ▼                                    │
+│                  ┌─────────────────┐                            │
+│                  │  Curator Agent  │  reads user_profile.py     │
+│                  │  (Gemini LLM)   │  ranks 0.0 to 10.0         │
+│                  └────────┬────────┘                            │
+│                           ▼                                     │
+│                  ┌─────────────────┐                            │
+│                  │   Email Agent   │  takes top 10 articles     │
+│                  │  (Gemini LLM)   │  writes HTML newsletter    │
+│                  └────────┬────────┘                            │
+│                           ▼                                     │
+│          ┌────────────────────────────────┐                     │
+│          │  SMTP Delivery                 │                     │
+│          │  Sends to user's inbox         │                     │
+│          └────────────────────────────────┘                     │
+└──────────────────────────────┬──────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    POSTGRESQL DATABASE                          │
+│  Tracks state at every micro-step to prevent duplicate emails   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow
+
+```text
+INPUT: Triggered by 8:00 AM Cron Job
+        │
+        ▼
+[1] Scrapers (app/scrapers/) ───────────────── RSS & YouTube APIs
+    Fetches raw URLs, Titles, and Metadata
+        │
+        ▼
+[2] Deep Extraction (app/services/) ────────── Jina Reader API
+    Visits the URL and extracts pure, clean Markdown text.
+    (Memory optimized to bypass Render's 512MB RAM limits)
+        │
+        ▼
+[3] Digest Agent (app/agent/digest_agent.py) ─ Gemini-2.5-Flash
+    Reads 5,000+ word technical papers.
+    Compresses into a 2-3 sentence dense summary.
+        │
+        ▼
+[4] Curator Agent (app/agent/curator_agent.py) Gemini-2.5-Flash
+    Cross-references the summary against user_profile.py.
+    Scores relevance from 0.0 to 10.0.
+        │
+        ▼
+[5] Email Agent (app/agent/email_agent.py) ─── Gemini-2.5-Flash
+    Generates a personalized introduction.
+    Formats the Top 10 highest-ranked articles into HTML.
+        │
+        ▼
+OUTPUT: Delivered to Inbox via SMTP
+```
+
+### Where Humans and Testing Are Involved
+
+```text
+HUMAN IN THE LOOP
+  - Zero-touch daily execution. The human only interacts by reading the final email.
+  - The human can edit `app/profiles/user_profile.py` to change what the AI curates.
+
+STATE MANAGEMENT
+  - The Repository (`app/database/repository.py`) saves state at every single step.
+  - If the API crashes on step 3, the next cron job resumes exactly at step 3.
+```
+
+---
+
+## Setup Instructions
+
+### Prerequisites
 - Python 3.12+
-- [uv](https://github.com/astral-sh/uv) (for blazing fast dependency management)
-- Docker Desktop (for the PostgreSQL database)
+- `uv` package manager
+- Gemini API Key ([Google AI Studio](https://aistudio.google.com/))
+- Gmail App Password (for sending emails)
 
-### 2. Installation
-Clone the repository and install the dependencies:
+### 1. Local Database Setup (Docker)
 ```bash
-git clone <YOUR_GITHUB_REPO_URL>
-cd ai-news-aggregator
+docker-compose -f docker/docker-compose.yml up -d
+```
+
+### 2. Configure Environment
+Create a `.env` file in the `app/` folder:
+```text
+GEMINI_API_KEY=your_key_here
+MY_EMAIL=your_email@gmail.com
+APP_PASSWORD=your_gmail_app_password
+```
+
+### 3. Install Dependencies & Run
+```bash
 uv sync
+uv run python main.py
 ```
 
-### 3. Environment Setup
-Copy the example environment file and fill in your secrets:
-```bash
-cp app/example.env .env
-```
-Ensure you have the following filled out in your `.env`:
-- `GEMINI_API_KEY`: Get this from Google AI Studio.
-- `MY_EMAIL` / `APP_PASSWORD`: For the SMTP newsletter delivery.
+### ☁️ Cloud Deployment (Render)
+This project is configured for one-click Infrastructure-as-Code deployment via Render.
+1. Connect your GitHub to Render.
+2. Select **New** -> **Blueprint**.
+3. Render reads `render.yaml`, provisions a free Postgres Database, and schedules the daily Cron Job (using a custom `Dockerfile` to guarantee environment consistency).
 
-### 4. Database Setup
-Spin up the PostgreSQL database using Docker:
-```bash
-cd docker
-docker-compose up -d
+---
+
+## Sample Interactions
+
+### The Digest Agent (Summarization)
+```text
+INPUT (Raw Markdown from Anthropic):
+"Today we are announcing Constitutional AI, a new approach to training language models... [5,000 words of technical training methodology]"
+
+OUTPUT (Digest):
+"Anthropic introduces Constitutional AI, a method using AI feedback rather than human feedback to evaluate model outputs against a set of principles. This reduces the reliance on massive human labeling efforts and improves harmlessness without sacrificing helpfulness."
 ```
-Then, generate the database tables:
-```bash
-python -m app.database.create_tables
+
+### The Curator Agent (Ranking)
+```text
+USER PROFILE: "I am a DevOps engineer interested in deployment, MLOps, and scalable architecture. I don't care about consumer AI apps."
+
+INPUT (Digest): "OpenAI releases new voice mode for ChatGPT iOS app."
+SCORE: 2.1 (Low relevance - Consumer App)
+
+INPUT (Digest): "How to deploy Llama 3 on Kubernetes using vLLM."
+SCORE: 9.8 (High relevance - MLOps/Deployment)
 ```
 
 ---
 
-## 💻 Usage
+## Design Decisions and Trade-offs
 
-To run the full daily pipeline (Scrape -> Extract -> Summarize -> Rank -> Email):
-```bash
-python main.py
-```
+**Why Jina Reader API over Docling?**
+Originally, the project used IBM's `docling` library to parse web pages into Markdown. However, `docling` loads heavy Machine Learning models into RAM, causing catastrophic Out-Of-Memory (OOM) crashes on Render's 512MB free tier. Swapping to the `Jina API` offloads the memory cost entirely, keeping the project 100% free while maintaining flawless Markdown extraction.
 
-To run individual services for testing:
-```bash
-# Only run the scrapers
-python -m app.runner
+**Why Gemini 2.5 Flash?**
+Reading entire research papers and video transcripts requires a massive context window. Gemini 2.5 Flash offers a 1-million token context window while being exponentially cheaper and faster than GPT-4o. 
 
-# Only run the AI summarizer
-python -m app.services.process_digest
+**Why PostgreSQL instead of SQLite?**
+While SQLite is easier for local testing, cloud platforms like Render use ephemeral file systems (they delete files when the server restarts). By connecting to a remote PostgreSQL database, the app's history survives server restarts, ensuring you never receive duplicate emails.
 
-# Only run the personalized curator
-python -m app.services.process_curator
-```
+**Trade-off: LLM Chain vs. Single Prompt**
+The pipeline uses three separate AI agents (Digest, Curator, Email) instead of passing everything into one giant prompt. This is slightly slower and uses more API calls, but it drastically reduces hallucination and allows the system to cache intermediate summaries in the database.
 
 ---
 
-## ☁️ Cloud Deployment (Render)
+## Reliability and Evaluation
 
-This project includes a `render.yaml` file for zero-touch cloud deployment using [Render](https://render.com). It spins up a free-tier Managed PostgreSQL database and a Cron Job that executes the pipeline automatically every 24 hours.
+### How the System Proves It Works
 
-1. Create a free account on [Render](https://render.com).
-2. Go to your Render Dashboard and click **New** -> **Blueprint**.
-3. Connect your GitHub repository.
-4. Render will automatically detect the `render.yaml` file.
-5. In the Render Dashboard, you will be prompted to fill in your 3 environment variables: `GEMINI_API_KEY`, `MY_EMAIL`, and `APP_PASSWORD`.
-6. Click **Apply**. 
+**1. Idempotent Architecture**
+The `main.py` orchestrator runs in strict stages (Scrape -> Extract -> Digest -> Curate -> Email). At the end of every stage, the state is committed to the database. If the Jina API goes offline during the extraction phase, the system gracefully exits. The next day, it skips scraping and resumes exactly where it left off, preventing data loss.
 
-Render will instantly build your database and schedule the `main.py` task to run daily!
+**2. Graceful Degradation**
+If a YouTube video disables its closed captions, the `youtube_transcript_api` fails gracefully, logs a `__UNAVAILABLE__` flag in the database, and moves on to the next video without crashing the entire pipeline.
+
+**3. Database Deduplication**
+Every article is assigned a unique `guid` derived from its URL. The database enforces uniqueness, making it mathematically impossible to process or email the exact same article twice, even if the cron job is accidentally triggered multiple times a day.
+
+---
+
+## Reflection and Ethics
+
+### Limitations and Biases
+- **Dependency on Jina**: The system relies on `r.jina.ai` for HTML-to-Markdown conversion. If Jina goes offline or adds a strict paywall, the pipeline will fail to read full articles (though it will gracefully fall back to the short RSS descriptions).
+- **Curator Echo Chamber**: Because the Curator Agent heavily filters content based on the `user_profile.py`, it inherently creates an echo chamber. The user will rarely discover breakthroughs in fields outside their specified interests.
+
+### Could This Be Misused?
+A bad actor could point the RSS scrapers at heavily biased political feeds and set the Curator Agent to maximize outrage and polarization, essentially creating an automated propaganda newsletter.
+
+### What Surprised Me in Testing
+The most surprising finding was the quality of the `CuratorAgent` ranking. By explicitly asking Gemini to output its mathematical reasoning *before* outputting the final score, the AI caught subtle nuances in tech papers that perfectly aligned with the user profile, rather than just doing basic keyword matching.
+
+---
+
+## Technology Stack
+
+| Layer | Technology |
+|---|---|
+| AI Engine | Gemini-2.5-Flash (via `google-genai` SDK) |
+| Web Extraction | Jina Reader API (`r.jina.ai`) |
+| Video Extraction | `youtube_transcript_api` |
+| Database | PostgreSQL via SQLAlchemy ORM |
+| Deployment | Render (IaC `render.yaml` + Docker) |
+| Package Manager | `uv` (Astral) |
+
+---
+
+## AI Features Checklist
+
+- ✅ **RAG / Context Extraction** — Fetches live web pages and video transcripts to feed into the LLM context window.
+- ✅ **Multi-Agent Pipeline** — Breaks complex reasoning into specialized agents (Digester, Curator, Writer).
+- ✅ **Personalization** — Dynamically alters output based on a structured user profile.
+- ✅ **State Management** — Uses a Repository pattern to save LLM outputs at intermediate steps.
