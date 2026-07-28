@@ -2,7 +2,7 @@
 
 ## Demo
 
-![Final Email Output](https://github.com/user-attachments/assets/6913488b-ffdf-488d-b027-e679a4bbd153)
+![Final Email Output](https://github.com/user-attachments/assets/7e574118-9a11-4dce-ade6-0a828d6ad10e)
 
 ▶ [Watch the deployment in action](https://github.com/) *(Placeholder for future demo link)*
 
