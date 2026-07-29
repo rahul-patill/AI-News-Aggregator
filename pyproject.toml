@@ -8,6 +8,7 @@ dependencies = [
     "beautifulsoup4>=4.14.2",
     "feedparser>=6.0.12",
     "google-genai>=2.14.0",
+    "langfuse>=4.14.1",
     "markdown>=3.7.0",
     "markdownify>=0.11.6",
     "openai>=2.7.2",
