@@ -4,6 +4,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from langfuse import get_client
 
 load_dotenv()
 
@@ -33,19 +34,31 @@ class DigestAgent:
     def generate_digest(self, title: str, content: str, article_type: str) -> Optional[DigestOutput]:
         try:
             user_prompt = f"Create a digest for this {article_type}: \n Title: {title} \n Content: {content[:8000]}"
-
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=user_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=self.system_prompt,
-                    temperature=0.7,
-                    response_mime_type="application/json",
-                    response_schema=DigestOutput,
-                )
-            )
             
-            return response.parsed
+            langfuse = get_client()
+            with langfuse.start_as_current_observation(
+                name="generate_digest",
+                as_type="generation",
+                model=self.model,
+                input=user_prompt,
+                metadata={"article_type": article_type, "original_title": title}
+            ) as generation:
+
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=self.system_prompt,
+                        temperature=0.7,
+                        response_mime_type="application/json",
+                        response_schema=DigestOutput,
+                    )
+                )
+                
+                if response.parsed:
+                    generation.update(output=response.parsed.model_dump())
+                
+                return response.parsed
         except Exception as e:
             print(f"Error generating digest: {e}")
             return None
