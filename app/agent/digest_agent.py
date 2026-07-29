@@ -3,8 +3,8 @@ from typing import Optional
 from google import genai
 from google.genai import types
 from pydantic import BaseModel
-from dotenv import load_dotenv
 from langfuse import get_client
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -40,10 +40,9 @@ class DigestAgent:
                 name="generate_digest",
                 as_type="generation",
                 model=self.model,
-                input=user_prompt,
-                metadata={"article_type": article_type, "original_title": title}
+                input=user_prompt
             ) as generation:
-
+                
                 response = self.client.models.generate_content(
                     model=self.model,
                     contents=user_prompt,
@@ -55,9 +54,18 @@ class DigestAgent:
                     )
                 )
                 
+                if response.usage_metadata:
+                    generation.update(
+                        usage={
+                            "input": response.usage_metadata.prompt_token_count,
+                            "output": response.usage_metadata.candidates_token_count,
+                            "unit": "TOKENS"
+                        }
+                    )
+                
                 if response.parsed:
                     generation.update(output=response.parsed.model_dump())
-                
+                    
                 return response.parsed
         except Exception as e:
             print(f"Error generating digest: {e}")

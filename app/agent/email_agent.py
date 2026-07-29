@@ -5,7 +5,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-
+from langfuse import get_client
 load_dotenv()
 
 
@@ -90,18 +90,38 @@ Top 10 ranked articles:
 Generate a greeting and introduction that previews these articles."""
 
         try:
-            response = self.client.models.generate_content(
+            langfuse = get_client()
+            with langfuse.start_as_current_observation(
+                name="generate_introduction",
+                as_type="generation",
                 model=self.model,
-                contents=user_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=EMAIL_PROMPT,
-                    temperature=0.7,
-                    response_mime_type="application/json",
-                    response_schema=EmailIntroduction,
+                input=user_prompt
+            ) as generation:
+                
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=EMAIL_PROMPT,
+                        temperature=0.7,
+                        response_mime_type="application/json",
+                        response_schema=EmailIntroduction,
+                    )
                 )
-            )
-            
-            intro = response.parsed
+                
+                if response.usage_metadata:
+                    generation.update(
+                        usage={
+                            "input": response.usage_metadata.prompt_token_count,
+                            "output": response.usage_metadata.candidates_token_count,
+                            "unit": "TOKENS"
+                        }
+                    )
+                
+                if response.parsed:
+                    generation.update(output=response.parsed.model_dump())
+                    
+                intro = response.parsed
             if not intro.greeting.startswith(f"Hey {self.user_profile['name']}"):
                 intro.greeting = f"Hey {self.user_profile['name']}, here is your daily digest of AI news for {current_date}."
             

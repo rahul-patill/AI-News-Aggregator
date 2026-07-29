@@ -4,7 +4,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-
+from langfuse import get_client
 load_dotenv()
 
 
@@ -81,19 +81,39 @@ Preferences:
 Provide a relevance score (0.0-10.0) and rank (1-{len(digests)}) for each article, ordered from most to least relevant."""
 
         try:
-            response = self.client.models.generate_content(
+            langfuse = get_client()
+            with langfuse.start_as_current_observation(
+                name="rank_digests",
+                as_type="generation",
                 model=self.model,
-                contents=user_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=self.system_prompt,
-                    temperature=0.3,
-                    response_mime_type="application/json",
-                    response_schema=RankedDigestList,
+                input=user_prompt
+            ) as generation:
+                
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=self.system_prompt,
+                        temperature=0.3,
+                        response_mime_type="application/json",
+                        response_schema=RankedDigestList,
+                    )
                 )
-            )
-            
-            ranked_list = response.parsed
-            return ranked_list.articles if ranked_list else []
+                
+                if response.usage_metadata:
+                    generation.update(
+                        usage={
+                            "input": response.usage_metadata.prompt_token_count,
+                            "output": response.usage_metadata.candidates_token_count,
+                            "unit": "TOKENS"
+                        }
+                    )
+                
+                if response.parsed:
+                    generation.update(output=response.parsed.model_dump())
+                    
+                ranked_list = response.parsed
+                return ranked_list.articles if ranked_list else []
         except Exception as e:
             print(f"Error ranking digests: {e}")
             return []
