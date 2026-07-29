@@ -50,23 +50,23 @@ Before this system, staying updated meant manually checking multiple websites, r
 │                       FASTAPI / PYTHON APP                      │
 │                                                                 │
 │  ┌─────────────┐    ┌──────────────┐    ┌──────────────────┐    │
-│  │ Scrapers    │    │ Extraction   │    │  Digest Agent    │    │
-│  │ (RSS / YT)  │    │ (Jina API)   │    │  (Gemini LLM)    │    │
-│  │ fetch URLs  │    │ HTML → MD    │    │ MD → Summary     │    │
-│  └──────┬──────┘    └──────┬───────┘    └────────┬─────────┘    │
-│         └──────────────────┴─────────────────────┘              │
-│                            │                                    │
-│                            ▼                                    │
-│                  ┌─────────────────┐                            │
-│                  │  Curator Agent  │  reads user_profile.py     │
-│                  │  (Gemini LLM)   │  ranks 0.0 to 10.0         │
-│                  └────────┬────────┘                            │
-│                           ▼                                     │
-│                  ┌─────────────────┐                            │
-│                  │   Email Agent   │  takes top 10 articles     │
-│                  │  (Gemini LLM)   │  writes HTML newsletter    │
-│                  └────────┬────────┘                            │
-│                           ▼                                     │
+│  │ Scrapers    │    │ Extraction   │    │  Digest Agent    │──┐ │
+│  │ (RSS / YT)  │    │ (Jina API)   │    │  (Gemini LLM)    │  │ │
+│  │ fetch URLs  │    │ HTML → MD    │    │ MD → Summary     │  │ │
+│  └──────┬──────┘    └──────┬───────┘    └────────┬─────────┘  │ │
+│         └──────────────────┴─────────────────────┘            │ │
+│                            │                                  │ │
+│                            ▼                                  │ │
+│                  ┌─────────────────┐                          │ │
+│                  │  Curator Agent  │──┐                       │ │
+│                  │  (Gemini LLM)   │  │                       │ │
+│                  └────────┬────────┘  │                       │ │
+│                           ▼           │  ┌──────────────────┐ │ │
+│                  ┌─────────────────┐  │  │ LANGFUSE CLOUD   │ │ │
+│                  │   Email Agent   │──┼─▶│ Traces prompts,  │◀┘ │
+│                  │  (Gemini LLM)   │  │  │ tokens, latency, │   │
+│                  └────────┬────────┘  │  │ & total costs    │   │
+│                           ▼           │  └──────────────────┘   │
 │          ┌────────────────────────────────┐                     │
 │          │  SMTP Delivery                 │                     │
 │          │  Sends to user's inbox         │                     │
@@ -98,16 +98,19 @@ INPUT: Triggered by 8:00 AM Cron Job
 [3] Digest Agent (app/agent/digest_agent.py) ─ Gemini-2.5-Flash
     Reads 5,000+ word technical papers.
     Compresses into a 2-3 sentence dense summary.
+    (Async: Streams prompt & tokens to Langfuse)
         │
         ▼
 [4] Curator Agent (app/agent/curator_agent.py) Gemini-2.5-Flash
     Cross-references the summary against user_profile.py.
     Scores relevance from 0.0 to 10.0.
+    (Async: Streams prompt & tokens to Langfuse)
         │
         ▼
 [5] Email Agent (app/agent/email_agent.py) ─── Gemini-2.5-Flash
     Generates a personalized introduction.
     Formats the Top 10 highest-ranked articles into HTML.
+    (Async: Streams prompt & tokens to Langfuse)
         │
         ▼
 OUTPUT: Delivered to Inbox via SMTP
@@ -150,6 +153,9 @@ Create a `.env` file in the `app/` folder:
 GEMINI_API_KEY=your_key_here
 MY_EMAIL=your_email@gmail.com
 APP_PASSWORD=your_gmail_app_password
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_HOST=https://us.cloud.langfuse.com
 ```
 
 ### 3. Install Dependencies & Run
@@ -193,6 +199,20 @@ SCORE: 9.8 (High relevance - MLOps/Deployment)
 ### Automated Execution Logs
 ![Render Log Output 1](https://github.com/user-attachments/assets/13777c65-2662-4113-adb6-3a409e6f5572)
 ![Render Log Output 2](https://github.com/user-attachments/assets/55041d1d-97ff-4692-a199-261ab57fac01)
+
+---
+
+## Observability and Cost Tracking
+
+**Langfuse Integration**
+This project integrates the **Langfuse V4 SDK** to provide complete "X-Ray" observability into the AI pipeline. Because the pipeline handles massive input tokens (entire YouTube transcripts and deep technical articles), tracking token usage and latency is critical.
+
+Every AI Agent is wrapped in a Langfuse Context Manager (`langfuse.start_as_current_observation`), which allows you to:
+1. **Track Exact Costs:** Monitor exactly how many cents the pipeline costs per execution by extracting native Gemini token metrics.
+2. **Debug Rankings:** See the exact Prompt sent and Output received, making it trivial to figure out *why* the Curator Agent scored an article a 3.0 vs a 9.0.
+3. **Monitor Latency:** Discover if generation bottlenecks are happening at the Digester stage or the Email stage.
+
+![Langfuse Dashboard Trace](https://github.com/user-attachments/assets/1c71289d-3f32-46d1-bb13-120d46482b1a)
 
 ---
 
@@ -250,6 +270,7 @@ The most surprising finding was the quality of the `CuratorAgent` ranking. By ex
 | Video Extraction | `youtube_transcript_api` |
 | Database | PostgreSQL via SQLAlchemy ORM |
 | Deployment | Render (IaC `render.yaml` + Docker) |
+| Observability | Langfuse (V4 SDK) |
 | Package Manager | `uv` (Astral) |
 
 ---
