@@ -1,16 +1,62 @@
-# React + Vite
+# Signal — AI News Aggregator Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A curated-intelligence dashboard for your FastAPI news backend, built with React + Vite + Tailwind CSS v4.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+This starts the Vite dev server (default: http://localhost:5173) and proxies any request to
+`/api/*` to your FastAPI backend at `http://localhost:8000`. Make sure your FastAPI server is
+running before starting the frontend.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## What it expects from your API
 
-## Expanding the Oxlint configuration
+`GET /api/news` should return either a plain array, or an object with an `articles` array, of
+objects shaped like:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+```json
+{
+  "title": "string",
+  "summary": "string",
+  "url": "string",
+  "relevance_score": 0.0,
+  "article_type": "string"
+}
+```
+
+`relevance_score` can be either 0–1 or 0–100 — it's normalized automatically.
+
+## Design concept
+
+"Wire & Signal" — the AI plays wire-service editor, so the UI reads like a field report rather
+than a typical dark-mode dashboard: warm paper background, editorial serif (Fraunces) for
+headlines, monospace (IBM Plex Mono) for scores and metadata, and a seismograph-style "Signal
+Meter" gauge (instead of a generic score badge) as the one signature element per card.
+
+## Structure
+
+```
+src/
+  index.css              Design tokens (Tailwind v4 @theme block)
+  App.jsx                Layout + data fetching
+  components/
+    Header.jsx            Masthead
+    CuratorLog.jsx         Left pane "field notes" panel
+    Feed.jsx               Loading / error / empty / list states
+    ArticleCard.jsx        Individual article row
+    SignalMeter.jsx        Signature relevance gauge
+```
+
+## Build for production
+
+```bash
+npm run build
+```
+
+Outputs to `dist/`. Note: the dev proxy to localhost:8000 only applies to `npm run dev` — for a
+production deployment you'll need to serve this behind the same origin as your API, or point
+fetch calls at your API's real URL.

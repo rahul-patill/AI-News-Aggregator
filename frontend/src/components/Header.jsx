@@ -1,23 +1,26 @@
-export function Header({ articleCount }) {
-  const today = new Date().toLocaleDateString('en-US', {
+export default function Header() {
+  const now = new Date()
+  const dateStr = now.toLocaleDateString('en-US', {
     weekday: 'long',
+    year: 'numeric',
     month: 'long',
     day: 'numeric',
   })
 
   return (
-    <header className="mb-10 text-center">
-      <p className="text-[0.65rem] font-semibold tracking-[0.18em] uppercase text-accent mb-4">
-        AI News Aggregator
-      </p>
-      <h1 className="font-display text-4xl font-bold text-text-primary tracking-tight leading-tight mb-3">
-        Today's briefing
-      </h1>
-      <p className="text-sm text-text-secondary max-w-md mx-auto leading-relaxed">
-        {articleCount} articles scraped, summarized, and ranked by relevance using Gemini.
-      </p>
-      <div className="mt-5 pt-5 border-t border-glass-border">
-        <span className="text-sm text-text-tertiary">{today}</span>
+    <header className="border-b border-hairline">
+      <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-6 flex items-baseline justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl md:text-[2.35rem] font-semibold tracking-tight text-ink leading-none">
+            AI News Aggregator
+          </h1>
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-graphite mt-2">
+            Curated Intelligence Wire
+          </p>
+        </div>
+        <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-graphite hidden sm:block">
+          {dateStr}
+        </p>
       </div>
     </header>
   )

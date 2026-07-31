@@ -1,67 +1,65 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
-/* ─── Theme Tokens ─── */
 @theme {
-  --color-base: #08090D;
-  --color-surface: #111318;
-  --color-elevated: #191B22;
-  --color-glass: rgba(255, 255, 255, 0.025);
-  --color-glass-border: rgba(255, 255, 255, 0.07);
-  --color-glass-hover: rgba(255, 255, 255, 0.055);
+  --font-display: "Fraunces", serif;
+  --font-body: "Source Serif 4", serif;
+  --font-mono: "IBM Plex Mono", monospace;
 
-  --color-text-primary: #E8E9EF;
-  --color-text-secondary: #8A8C99;
-  --color-text-tertiary: #555664;
-
-  --color-accent: #818CF8;
-  --color-accent-soft: rgba(129, 140, 248, 0.10);
-  --color-accent-hover: #A5B4FC;
-
-  --color-border: rgba(255, 255, 255, 0.06);
-  --color-border-hover: rgba(255, 255, 255, 0.12);
-
-  --color-score-high: #818CF8;
-  --color-score-mid: #6B6E7F;
-  --color-score-low: #3A3C49;
-
-  --font-display: 'Space Grotesk', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
+  --color-paper: #F2EFE9;
+  --color-linen: #E8E4DA;
+  --color-ink: #1B1F3B;
+  --color-ink-soft: #3A3E5C;
+  --color-amber: #C46A2C;
+  --color-amber-soft: #E0A876;
+  --color-graphite: #6B6A64;
+  --color-hairline: #D8D3C6;
 }
 
-/* ─── Base ─── */
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    background: var(--color-paper);
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-amber-soft);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-amber);
+    outline-offset: 2px;
+  }
 }
 
-html {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer utilities {
+  .paper-texture {
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(27,31,59,0.035) 1px, transparent 0);
+    background-size: 22px 22px;
+  }
+
+  .letterpress {
+    text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+  }
 }
 
-body {
-  font-family: var(--font-body);
-  background-color: var(--color-base);
-  color: var(--color-text-primary);
-  line-height: 1.6;
-  min-height: 100vh;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-/* ─── Reduced Motion ─── */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  * {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }

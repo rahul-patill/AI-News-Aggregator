@@ -1,67 +1,57 @@
-function scoreColor(score) {
-  if (score >= 7) return 'bg-score-high'
-  if (score >= 4) return 'bg-score-mid'
-  return 'bg-score-low'
-}
+import SignalMeter from './SignalMeter'
 
-function stripeColor(score) {
-  if (score >= 7) return 'bg-accent'
-  if (score >= 4) return 'bg-text-tertiary'
-  return 'bg-score-low'
-}
-
-function formatSource(type) {
-  const labels = {
-    anthropic: 'Anthropic',
-    openai: 'OpenAI',
-    youtube: 'YouTube',
-  }
-  return labels[type] || type
-}
-
-export function ArticleCard({ article }) {
+export default function ArticleCard({ article, index }) {
   const { title, summary, url, relevance_score, article_type, reasoning } = article
 
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group block rounded-xl border border-glass-border bg-surface/40 hover:bg-surface/70 hover:border-border-hover transition-all duration-200 ease-out overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.2)]"
-    >
-      <div className="flex">
-        {/* Relevance stripe */}
-        <div className={`w-[3px] shrink-0 ${stripeColor(relevance_score)} transition-all duration-300`} />
+    <article className="group border-b border-hairline py-7 first:pt-0">
+      <div className="flex items-start gap-4">
+        <span className="font-mono text-[11px] text-graphite pt-1 w-8 shrink-0 tabular-nums">
+          {String(index + 1).padStart(2, '0')}
+        </span>
 
-        <div className="flex-1 p-5">
-          {/* Top row */}
-          <div className="flex items-start justify-between gap-4 mb-2.5">
-            <h2 className="font-display text-[0.95rem] font-semibold text-text-primary leading-snug group-hover:text-accent-hover transition-colors duration-200">
+        <div className="flex-1 min-w-0">
+          <h2 className="font-display text-[1.4rem] leading-snug font-medium text-ink group-hover:text-amber transition-colors duration-200">
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline decoration-1 underline-offset-4"
+            >
               {title}
-            </h2>
-            <span className={`shrink-0 font-display text-[0.7rem] font-bold px-2.5 py-1 rounded-md text-white/90 ${scoreColor(relevance_score)}`}>
-              {relevance_score?.toFixed(1)}
-            </span>
-          </div>
+            </a>
+          </h2>
 
-          {/* Summary */}
-          <p className="text-[0.84rem] text-text-secondary leading-relaxed mb-3.5">
-            {summary}
-          </p>
+          {summary && (
+            <p className="font-body text-[15px] leading-relaxed text-ink-soft mt-2.5 max-w-[62ch]">
+              {summary}
+            </p>
+          )}
 
-          {/* Footer */}
-          <div className="flex items-end justify-between gap-4">
-            <span className="text-[0.65rem] font-semibold tracking-[0.12em] uppercase text-text-tertiary">
-              {formatSource(article_type)}
-            </span>
-            {reasoning && (
-              <p className="text-[0.72rem] text-text-tertiary/80 italic text-right max-w-sm leading-snug">
+          {reasoning && (
+            <div className="mt-4 border-l-2 border-amber-soft pl-4">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-amber mb-1.5">
+                Why this made the wire
+              </p>
+              <p className="font-display italic text-[14.5px] leading-relaxed text-ink-soft max-w-[58ch]">
                 {reasoning}
               </p>
-            )}
+            </div>
+          )}
+
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+            <SignalMeter score={relevance_score} articleType={article_type} />
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-graphite hover:text-amber transition-colors duration-200"
+            >
+              Read source →
+            </a>
           </div>
         </div>
       </div>
-    </a>
+    </article>
   )
 }

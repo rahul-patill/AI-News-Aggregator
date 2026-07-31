@@ -1,53 +1,73 @@
-import { useState, useEffect } from 'react'
-import { Header } from './components/Header'
-import { ProfileCard } from './components/ProfileCard'
-import { Feed } from './components/Feed'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import Header from './components/Header'
+import CuratorLog from './components/CuratorLog'
+import Feed from './components/Feed'
 
 export default function App() {
   const [articles, setArticles] = useState([])
   const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [status, setStatus] = useState('loading') // loading | ready | error
+  const [error, setError] = useState(null)
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [newsRes, profileRes] = await Promise.all([
-          fetch('/api/news'),
-          fetch('/api/profile'),
-        ])
-        const newsData = await newsRes.json()
-        const profileData = await profileRes.json()
-
-        setArticles(newsData.articles || [])
-        setProfile(profileData.profile || null)
-      } catch (err) {
-        console.error('Failed to fetch data:', err)
-      } finally {
-        setLoading(false)
-      }
+  const fetchData = useCallback(async () => {
+    setStatus('loading')
+    setError(null)
+    try {
+      const [newsRes, profileRes] = await Promise.all([
+        fetch('/api/news'),
+        fetch('/api/profile')
+      ])
+      if (!newsRes.ok) throw new Error(`Server responded with ${newsRes.status}`)
+      
+      const newsData = await newsRes.json()
+      const profileData = await profileRes.json()
+      
+      const list = Array.isArray(newsData) ? newsData : newsData.articles || []
+      setArticles(list)
+      setProfile(profileData.profile || null)
+      setArticles(list)
+      setStatus('ready')
+    } catch (err) {
+      setError(err.message)
+      setStatus('error')
     }
-
-    fetchData()
   }, [])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-6 h-6 border-2 border-glass-border border-t-accent rounded-full animate-spin" />
-          <p className="text-sm text-text-secondary">Loading your briefing…</p>
-        </div>
-      </div>
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  const categories = useMemo(() => {
+    const set = new Set(
+      articles.map((a) => a.article_type).filter(Boolean)
     )
-  }
+    return Array.from(set)
+  }, [articles])
 
   return (
-    <div className="min-h-screen flex justify-center px-6 sm:px-10 lg:px-16 py-14 pb-24">
-      <div className="w-full max-w-[780px]">
-        <Header articleCount={articles.length} />
-        <ProfileCard profile={profile} />
-        <Feed articles={articles} />
-      </div>
+    <div className="min-h-screen paper-texture">
+      <Header />
+      <main className="max-w-[1400px] mx-auto px-6 md:px-10 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,30%)_1px_minmax(0,1fr)] gap-8 lg:gap-10">
+          <CuratorLog articleCount={articles.length} categories={categories} profile={profile} />
+          <div className="hidden lg:block bg-hairline" />
+          <section>
+            <Feed
+              articles={articles}
+              status={status}
+              error={error}
+              onRetry={fetchData}
+            />
+          </section>
+        </div>
+      </main>
+      <footer className="border-t border-hairline mt-10">
+        <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-6">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-graphite">
+            Signal — end of transmission
+          </p>
+        </div>
+      </footer>
     </div>
   )
 }
