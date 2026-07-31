@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database.repository import Repository
 from app.database.connection import get_session
+from app.profiles.user_profile import USER_PROFILE
 import uvicorn
 
 app = FastAPI(title="AI News Aggregator API")
@@ -24,6 +25,13 @@ def get_news():
     # Fetch top 10 curated digests
     digests = repo.get_top_curated_digests(limit=10)
     return {"status": "success", "articles": digests}
+
+@app.get("/api/profile")
+def get_profile():
+    """
+    Returns the static user profile used for curation.
+    """
+    return {"status": "success", "profile": USER_PROFILE}
 
 if __name__ == "__main__":
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
