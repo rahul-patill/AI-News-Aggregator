@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import Column, String, DateTime, Text
+from sqlalchemy import Column, String, DateTime, Text, Float, Integer
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -53,5 +53,8 @@ class Digest(Base):
     url = Column(String, nullable=False)
     title = Column(String, nullable=False)
     summary = Column(Text, nullable=False)
+    relevance_score = Column(Float, nullable=True)
+    rank = Column(Integer, nullable=True)
+    reasoning = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

@@ -241,6 +241,41 @@ class Repository:
                 "url": d.url,
                 "title": d.title,
                 "summary": d.summary,
+                "relevance_score": d.relevance_score,
+                "rank": d.rank,
+                "reasoning": d.reasoning,
+                "created_at": d.created_at
+            }
+            for d in digests
+        ]
+
+    def update_digest_curation(self, digest_id: str, score: float, rank: int, reasoning: str) -> bool:
+        digest = self.session.query(Digest).filter_by(id=digest_id).first()
+        if digest:
+            digest.relevance_score = score
+            digest.rank = rank
+            digest.reasoning = reasoning
+            self.session.commit()
+            return True
+        return False
+        
+    def get_top_curated_digests(self, limit: int = 10) -> List[Dict[str, Any]]:
+        # Fetch digests that have been curated (rank is not null), ordered by rank
+        digests = self.session.query(Digest).filter(
+            Digest.rank.isnot(None)
+        ).order_by(Digest.rank.asc(), Digest.created_at.desc()).limit(limit).all()
+        
+        return [
+            {
+                "id": d.id,
+                "article_type": d.article_type,
+                "article_id": d.article_id,
+                "url": d.url,
+                "title": d.title,
+                "summary": d.summary,
+                "relevance_score": d.relevance_score,
+                "rank": d.rank,
+                "reasoning": d.reasoning,
                 "created_at": d.created_at
             }
             for d in digests

@@ -35,6 +35,15 @@ def generate_email_digest(hours: int = 72, top_n: int = 10) -> EmailDigestRespon
     if not ranked_articles:
         logger.error("Failed to rank digests")
         raise ValueError("Failed to rank articles")
+        
+    logger.info("Saving curation scores to the database...")
+    for ranked_article in ranked_articles:
+        repo.update_digest_curation(
+            digest_id=ranked_article.digest_id,
+            score=ranked_article.relevance_score,
+            rank=ranked_article.rank,
+            reasoning=ranked_article.reasoning
+        )
     
     logger.info(f"Generating email digest with top {top_n} articles")
     
