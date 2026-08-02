@@ -22,5 +22,5 @@ RUN uv sync --frozen
 # Copy the rest of our application code into the container
 COPY . .
 
-# When Render turns on this container, run the database table creation, then the main pipeline
-CMD ["bash", "-c", "uv run python -m app.database.create_tables && uv run python main.py"]
+# When Render turns on this container, run the database table creation, run migrations, then the main pipeline
+CMD ["bash", "-c", "uv run python -m app.database.create_tables && uv run python migrate.py && uv run python main.py"]
