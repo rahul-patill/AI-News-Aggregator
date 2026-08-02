@@ -12,7 +12,11 @@
 
 The **AI News Aggregator** is an autonomous, agentic data pipeline that acts as your personal research assistant. Instead of manually scrolling through RSS feeds, tech blogs, and YouTube videos to keep up with the overwhelming pace of AI advancements, this system reads everything for you. 
 
-It takes thousands of words of deep technical documentation (from sources like OpenAI and Anthropic) and hour-long YouTube videos, compresses them into concise summaries using **Gemini-2.5-Flash**, and then mathematically ranks them based on your personalized `user_profile.py`. Finally, it writes a custom HTML newsletter and emails it directly to you every morning.
+It takes thousands of words of deep technical documentation (from sources like OpenAI and Anthropic) and hour-long YouTube videos, compresses them into concise summaries using **Gemini-2.5-Flash**, and then mathematically ranks them based on your personalized `user_profile.py`. 
+
+The system now features two primary delivery mechanisms:
+1. **Interactive Dashboard ("Signal"):** A sleek, editorial-style React frontend that reads live from a FastAPI backend, providing an intelligence-wire experience with 'Signal Meters' for article relevance.
+2. **Email Newsletter:** A custom HTML newsletter emailed directly to you every morning.
 
 This matters because the sheer volume of AI news is impossible to keep up with manually. This system ensures you only read what actually matters to your specific career and interests.
 
@@ -158,11 +162,21 @@ LANGFUSE_SECRET_KEY=sk-lf-...
 LANGFUSE_HOST=https://us.cloud.langfuse.com
 ```
 
-### 3. Install Dependencies & Run
+### 3. Install Dependencies & Run Backend
 ```bash
 uv sync
-uv run python main.py
+uv run python main.py # Runs the pipeline once to fetch data
+uv run uvicorn server:app --reload # Starts the FastAPI server on port 8000
 ```
+
+### 4. Run the "Signal" Frontend Dashboard
+The new React frontend lives in the `frontend/` directory.
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Open `http://localhost:5173/` in your browser. The Vite proxy automatically routes `/api` requests to your FastAPI backend on port 8000.
 
 ### ☁️ Cloud Deployment (Render)
 This project is configured for one-click Infrastructure-as-Code deployment via Render.
@@ -269,9 +283,11 @@ The most surprising finding was the quality of the `CuratorAgent` ranking. By ex
 | Web Extraction | Jina Reader API (`r.jina.ai`) |
 | Video Extraction | `youtube_transcript_api` |
 | Database | PostgreSQL via SQLAlchemy ORM |
+| Backend API | FastAPI |
+| Frontend Dashboard | React, Vite, Tailwind CSS v4 (Custom "Signal" theme) |
 | Deployment | Render (IaC `render.yaml` + Docker) |
 | Observability | Langfuse (V4 SDK) |
-| Package Manager | `uv` (Astral) |
+| Package Manager | `uv` (Astral), `npm` |
 
 ---
 

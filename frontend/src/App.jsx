@@ -13,9 +13,10 @@ export default function App() {
     setStatus('loading')
     setError(null)
     try {
+      const API_BASE = import.meta.env.VITE_API_URL || ''
       const [newsRes, profileRes] = await Promise.all([
-        fetch('/api/news'),
-        fetch('/api/profile')
+        fetch(`${API_BASE}/api/news`),
+        fetch(`${API_BASE}/api/profile`)
       ])
       if (!newsRes.ok) throw new Error(`Server responded with ${newsRes.status}`)
       
