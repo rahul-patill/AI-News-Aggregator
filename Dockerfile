@@ -22,5 +22,5 @@ RUN uv sync --frozen
 # Copy the rest of our application code into the container
 COPY . .
 
-# When Render turns on this container, run the database table creation, run migrations, then the main pipeline (720 hours = 30 days backfill)
-CMD ["bash", "-c", "uv run python -m app.database.create_tables && uv run python migrate.py && uv run python main.py 720 10"]
+# When Render turns on this container, run the database table creation, run migrations, then the main pipeline (72 hours = 3 days backfill)
+CMD ["bash", "-c", "uv run python -m app.database.create_tables && uv run python migrate.py && uv run python main.py 72 10"]
