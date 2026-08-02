@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from app.database.repository import Repository
 from app.database.connection import get_session
@@ -16,12 +16,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def get_db():
+    session = get_session()
+    try:
+        yield session
+    finally:
+        session.close()
+
 @app.get("/api/news")
-def get_news():
+def get_news(session = Depends(get_db)):
     """
     Fetches the top curated news from the PostgreSQL database.
     """
-    repo = Repository(get_session())
+    repo = Repository(session)
     # Fetch top 10 curated digests
     digests = repo.get_top_curated_digests(limit=10)
     return {"status": "success", "articles": digests}
