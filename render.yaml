@@ -16,6 +16,8 @@ services:
           property: connectionString
       - key: GEMINI_API_KEY
         sync: false
+      - key: LLM_MODEL
+        value: "gemini/gemini-2.5-flash"
       - key: MY_EMAIL
         sync: false
       - key: APP_PASSWORD

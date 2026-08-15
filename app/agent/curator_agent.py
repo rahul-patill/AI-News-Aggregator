@@ -1,10 +1,8 @@
 import os
 from typing import List
-from google import genai
-from google.genai import types
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from langfuse import get_client
+from app.agent.llm_client import get_instructor_client, DEFAULT_MODEL
 load_dotenv()
 
 
@@ -42,8 +40,8 @@ Rank articles from most relevant (rank 1) to least relevant. Ensure each article
 
 class CuratorAgent:
     def __init__(self, user_profile: dict):
-        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        self.model = "gemini-2.5-flash"
+        self.client = get_instructor_client()
+        self.model = DEFAULT_MODEL
         self.user_profile = user_profile
         self.system_prompt = self._build_system_prompt()
 
@@ -81,39 +79,17 @@ Preferences:
 Provide a relevance score (0.0-10.0) and rank (1-{len(digests)}) for each article, ordered from most to least relevant."""
 
         try:
-            langfuse = get_client()
-            with langfuse.start_as_current_observation(
-                name="rank_digests",
-                as_type="generation",
+            response = self.client.chat.completions.create(
                 model=self.model,
-                input=user_prompt
-            ) as generation:
-                
-                response = self.client.models.generate_content(
-                    model=self.model,
-                    contents=user_prompt,
-                    config=types.GenerateContentConfig(
-                        system_instruction=self.system_prompt,
-                        temperature=0.3,
-                        response_mime_type="application/json",
-                        response_schema=RankedDigestList,
-                    )
-                )
-                
-                if response.usage_metadata:
-                    generation.update(
-                        usage={
-                            "input": response.usage_metadata.prompt_token_count,
-                            "output": response.usage_metadata.candidates_token_count,
-                            "unit": "TOKENS"
-                        }
-                    )
-                
-                if response.parsed:
-                    generation.update(output=response.parsed.model_dump())
-                    
-                ranked_list = response.parsed
-                return ranked_list.articles if ranked_list else []
+                messages=[
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                response_model=RankedDigestList,
+                temperature=0.3,
+            )
+            
+            return response.articles if response else []
         except Exception as e:
             print(f"Error ranking digests: {e}")
             return []

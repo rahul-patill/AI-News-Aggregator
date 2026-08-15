@@ -1,10 +1,8 @@
 import os
 from typing import Optional
-from google import genai
-from google.genai import types
 from pydantic import BaseModel
-from langfuse import get_client
 from dotenv import load_dotenv
+from app.agent.llm_client import get_instructor_client, DEFAULT_MODEL
 
 load_dotenv()
 
@@ -27,46 +25,25 @@ Guidelines:
 
 class DigestAgent:
     def __init__(self):
-        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        self.model = "gemini-2.5-flash"
+        self.client = get_instructor_client()
+        self.model = DEFAULT_MODEL
         self.system_prompt = PROMPT
 
     def generate_digest(self, title: str, content: str, article_type: str) -> Optional[DigestOutput]:
         try:
             user_prompt = f"Create a digest for this {article_type}: \n Title: {title} \n Content: {content[:8000]}"
             
-            langfuse = get_client()
-            with langfuse.start_as_current_observation(
-                name="generate_digest",
-                as_type="generation",
+            response = self.client.chat.completions.create(
                 model=self.model,
-                input=user_prompt
-            ) as generation:
-                
-                response = self.client.models.generate_content(
-                    model=self.model,
-                    contents=user_prompt,
-                    config=types.GenerateContentConfig(
-                        system_instruction=self.system_prompt,
-                        temperature=0.7,
-                        response_mime_type="application/json",
-                        response_schema=DigestOutput,
-                    )
-                )
-                
-                if response.usage_metadata:
-                    generation.update(
-                        usage={
-                            "input": response.usage_metadata.prompt_token_count,
-                            "output": response.usage_metadata.candidates_token_count,
-                            "unit": "TOKENS"
-                        }
-                    )
-                
-                if response.parsed:
-                    generation.update(output=response.parsed.model_dump())
-                    
-                return response.parsed
+                messages=[
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                response_model=DigestOutput,
+                temperature=0.7,
+            )
+            
+            return response
         except Exception as e:
             print(f"Error generating digest: {e}")
             return None

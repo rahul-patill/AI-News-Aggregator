@@ -1,11 +1,9 @@
 import os
 from datetime import datetime
 from typing import List, Optional
-from google import genai
-from google.genai import types
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from langfuse import get_client
+from app.agent.llm_client import get_instructor_client, DEFAULT_MODEL
 load_dotenv()
 
 
@@ -64,8 +62,8 @@ Keep it concise (2-3 sentences for the introduction), friendly, and professional
 
 class EmailAgent:
     def __init__(self, user_profile: dict):
-        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        self.model = "gemini-2.5-flash"
+        self.client = get_instructor_client()
+        self.model = DEFAULT_MODEL
         self.user_profile = user_profile
 
     def generate_introduction(self, ranked_articles: List) -> EmailIntroduction:
@@ -90,38 +88,17 @@ Top 10 ranked articles:
 Generate a greeting and introduction that previews these articles."""
 
         try:
-            langfuse = get_client()
-            with langfuse.start_as_current_observation(
-                name="generate_introduction",
-                as_type="generation",
+            response = self.client.chat.completions.create(
                 model=self.model,
-                input=user_prompt
-            ) as generation:
-                
-                response = self.client.models.generate_content(
-                    model=self.model,
-                    contents=user_prompt,
-                    config=types.GenerateContentConfig(
-                        system_instruction=EMAIL_PROMPT,
-                        temperature=0.7,
-                        response_mime_type="application/json",
-                        response_schema=EmailIntroduction,
-                    )
-                )
-                
-                if response.usage_metadata:
-                    generation.update(
-                        usage={
-                            "input": response.usage_metadata.prompt_token_count,
-                            "output": response.usage_metadata.candidates_token_count,
-                            "unit": "TOKENS"
-                        }
-                    )
-                
-                if response.parsed:
-                    generation.update(output=response.parsed.model_dump())
-                    
-                intro = response.parsed
+                messages=[
+                    {"role": "system", "content": EMAIL_PROMPT},
+                    {"role": "user", "content": user_prompt}
+                ],
+                response_model=EmailIntroduction,
+                temperature=0.7,
+            )
+            
+            intro = response
             if not intro.greeting.startswith(f"Hey {self.user_profile['name']}"):
                 intro.greeting = f"Hey {self.user_profile['name']}, here is your daily digest of AI news for {current_date}."
             
