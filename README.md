@@ -12,9 +12,9 @@
 
 The **AI News Aggregator** is an autonomous, agentic data pipeline that acts as your personal research assistant. Instead of manually scrolling through RSS feeds, tech blogs, and YouTube videos to keep up with the overwhelming pace of AI advancements, this system reads everything for you. 
 
-It takes thousands of words of deep technical documentation (from sources like OpenAI and Anthropic) and hour-long YouTube videos, compresses them into concise summaries using **Gemini-2.5-Flash**, and then mathematically ranks them based on your personalized `user_profile.py`. 
+It takes thousands of words of deep technical documentation (from sources like OpenAI and Anthropic) and hour-long YouTube videos, compresses them into concise summaries using a **model-agnostic LiteLLM client** (defaulting to `gemini-2.5-flash`), and then mathematically ranks them based on your personalized `user_profile.py`. Swapping the underlying AI model (to Claude or GPT-4o) requires changing a single environment variable.
 
-The system now features two primary delivery mechanisms:
+The system features two primary delivery mechanisms:
 1. **Interactive Dashboard ("Signal"):** A sleek, editorial-style React frontend that reads live from a FastAPI backend, providing an intelligence-wire experience with 'Signal Meters' for article relevance.
 2. **Email Newsletter:** A custom HTML newsletter emailed directly to you every morning.
 
@@ -55,7 +55,7 @@ Before this system, staying updated meant manually checking multiple websites, r
 │                                                                 │
 │  ┌─────────────┐    ┌──────────────┐    ┌──────────────────┐    │
 │  │ Scrapers    │    │ Extraction   │    │  Digest Agent    │──┐ │
-│  │ (RSS / YT)  │    │ (Jina API)   │    │  (Gemini LLM)    │  │ │
+│  │ (RSS / YT)  │    │ (Jina API)   │    │  (LiteLLM)       │  │ │
 │  │ fetch URLs  │    │ HTML → MD    │    │ MD → Summary     │  │ │
 │  └──────┬──────┘    └──────┬───────┘    └────────┬─────────┘  │ │
 │         └──────────────────┴─────────────────────┘            │ │
@@ -63,13 +63,13 @@ Before this system, staying updated meant manually checking multiple websites, r
 │                            ▼                                  │ │
 │                  ┌─────────────────┐                          │ │
 │                  │  Curator Agent  │──┐                       │ │
-│                  │  (Gemini LLM)   │  │                       │ │
+│                  │  (LiteLLM)      │  │                       │ │
 │                  └────────┬────────┘  │                       │ │
 │                           ▼           │  ┌──────────────────┐ │ │
 │                  ┌─────────────────┐  │  │ LANGFUSE CLOUD   │ │ │
-│                  │   Email Agent   │──┼─▶│ Traces prompts,  │◀┘ │
-│                  │  (Gemini LLM)   │  │  │ tokens, latency, │   │
-│                  └────────┬────────┘  │  │ & total costs    │   │
+│                  │   Email Agent   │──┼─▶│ Auto-traced via  │◀┘ │
+│                  │  (LiteLLM)      │  │  │ LiteLLM callback │   │
+│                  └────────┬────────┘  │  │ (tokens, cost)   │   │
 │                           ▼           │  └──────────────────┘   │
 │          ┌────────────────────────────────┐                     │
 │          │  SMTP Delivery                 │                     │
@@ -99,22 +99,22 @@ INPUT: Triggered by 8:00 AM Cron Job
     (Memory optimized to bypass Render's 512MB RAM limits)
         │
         ▼
-[3] Digest Agent (app/agent/digest_agent.py) ─ Gemini-2.5-Flash
+[3] Digest Agent (app/agent/digest_agent.py) ─ LiteLLM (default: gemini/gemini-2.5-flash)
     Reads 5,000+ word technical papers.
     Compresses into a 2-3 sentence dense summary.
-    (Async: Streams prompt & tokens to Langfuse)
+    (Auto-traced to Langfuse via LiteLLM success_callback)
         │
         ▼
-[4] Curator Agent (app/agent/curator_agent.py) Gemini-2.5-Flash
+[4] Curator Agent (app/agent/curator_agent.py) LiteLLM (default: gemini/gemini-2.5-flash)
     Cross-references the summary against user_profile.py.
     Scores relevance from 0.0 to 10.0.
-    (Async: Streams prompt & tokens to Langfuse)
+    (Auto-traced to Langfuse via LiteLLM success_callback)
         │
         ▼
-[5] Email Agent (app/agent/email_agent.py) ─── Gemini-2.5-Flash
+[5] Email Agent (app/agent/email_agent.py) ─── LiteLLM (default: gemini/gemini-2.5-flash)
     Generates a personalized introduction.
     Formats the Top 10 highest-ranked articles into HTML.
-    (Async: Streams prompt & tokens to Langfuse)
+    (Auto-traced to Langfuse via LiteLLM success_callback)
         │
         ▼
 OUTPUT: Delivered to Inbox via SMTP
@@ -160,6 +160,10 @@ APP_PASSWORD=your_gmail_app_password
 LANGFUSE_PUBLIC_KEY=pk-lf-...
 LANGFUSE_SECRET_KEY=sk-lf-...
 LANGFUSE_HOST=https://us.cloud.langfuse.com
+
+# Optional: change the AI model without touching any code
+# LLM_MODEL=anthropic/claude-3-5-sonnet-20240620
+# LLM_MODEL=gpt-4o
 ```
 
 ### 3. Install Dependencies & Run Backend
@@ -177,6 +181,9 @@ npm install
 npm run dev
 ```
 Open `http://localhost:5173/` in your browser. The Vite proxy automatically routes `/api` requests to your FastAPI backend on port 8000.
+
+<!-- Add screenshot here: Signal dashboard showing article cards with Signal Meter bars and relevance scores -->
+![Signal dashboard](https://github.com/user-attachments/assets/7217dc57-a97f-4571-aa16-ff567576d46a)
 
 ### ☁️ Cloud Deployment (Render)
 This project is configured for one-click Infrastructure-as-Code deployment via Render.
@@ -218,15 +225,21 @@ SCORE: 9.8 (High relevance - MLOps/Deployment)
 
 ## Observability and Cost Tracking
 
-**Langfuse Integration**
-This project integrates the **Langfuse V4 SDK** to provide complete "X-Ray" observability into the AI pipeline. Because the pipeline handles massive input tokens (entire YouTube transcripts and deep technical articles), tracking token usage and latency is critical.
+**Langfuse Integration (via LiteLLM Auto-Tracing)**
+This project integrates **Langfuse** for complete "X-Ray" observability into the AI pipeline. Because the pipeline handles massive input tokens (entire YouTube transcripts and deep technical articles), tracking token usage and latency is critical.
 
-Every AI Agent is wrapped in a Langfuse Context Manager (`langfuse.start_as_current_observation`), which allows you to:
-1. **Track Exact Costs:** Monitor exactly how many cents the pipeline costs per execution by extracting native Gemini token metrics.
+Tracing is configured once in `app/agent/llm_client.py` via LiteLLM's global callback system:
+```python
+litellm.success_callback = ["langfuse"]
+litellm.failure_callback = ["langfuse"]
+```
+This single configuration automatically instruments every agent in the pipeline, providing:
+1. **Track Exact Costs:** Monitor exactly how many cents the pipeline costs per execution across all models.
 2. **Debug Rankings:** See the exact Prompt sent and Output received, making it trivial to figure out *why* the Curator Agent scored an article a 3.0 vs a 9.0.
 3. **Monitor Latency:** Discover if generation bottlenecks are happening at the Digester stage or the Email stage.
 
 ![Langfuse Dashboard Trace](https://github.com/user-attachments/assets/1c71289d-3f32-46d1-bb13-120d46482b1a)
+
 
 ---
 
@@ -235,8 +248,11 @@ Every AI Agent is wrapped in a Langfuse Context Manager (`langfuse.start_as_curr
 **Why Jina Reader API over Docling?**
 Originally, the project used IBM's `docling` library to parse web pages into Markdown. However, `docling` loads heavy Machine Learning models into RAM, causing catastrophic Out-Of-Memory (OOM) crashes on Render's 512MB free tier. Swapping to the `Jina API` offloads the memory cost entirely, keeping the project 100% free while maintaining flawless Markdown extraction.
 
-**Why Gemini 2.5 Flash?**
-Reading entire research papers and video transcripts requires a massive context window. Gemini 2.5 Flash offers a 1-million token context window while being exponentially cheaper and faster than GPT-4o. 
+**Why LiteLLM + instructor over a vendor SDK?**
+The original implementation used Google's `google-genai` SDK directly, which locked the entire application to a single AI provider. If Google raised prices or a competitor released a better model, every agent would have had to be rewritten. By routing all AI calls through LiteLLM, the model becomes a configuration value (the `LLM_MODEL` environment variable) rather than a code dependency. The `instructor` library is layered on top to guarantee structured Pydantic output works identically across all providers.
+
+**Why Gemini 2.5 Flash as the default?**
+Reading entire research papers and video transcripts requires a massive context window. Gemini 2.5 Flash offers a 1-million token context window while being exponentially cheaper and faster than GPT-4o.
 
 **Why PostgreSQL instead of SQLite?**
 While SQLite is easier for local testing, cloud platforms like Render use ephemeral file systems (they delete files when the server restarts). By connecting to a remote PostgreSQL database, the app's history survives server restarts, ensuring you never receive duplicate emails.
@@ -279,14 +295,15 @@ The most surprising finding was the quality of the `CuratorAgent` ranking. By ex
 
 | Layer | Technology |
 |---|---|
-| AI Engine | Gemini-2.5-Flash (via `google-genai` SDK) |
+| AI Router | `litellm` (model-agnostic, default: `gemini/gemini-2.5-flash`) |
+| Structured Output | `instructor` (Pydantic-enforced JSON from any LLM) |
 | Web Extraction | Jina Reader API (`r.jina.ai`) |
 | Video Extraction | `youtube_transcript_api` |
 | Database | PostgreSQL via SQLAlchemy ORM |
 | Backend API | FastAPI |
 | Frontend Dashboard | React, Vite, Tailwind CSS v4 (Custom "Signal" theme) |
 | Deployment | Render (IaC `render.yaml` + Docker) |
-| Observability | Langfuse (V4 SDK) |
+| Observability | Langfuse (auto-traced via LiteLLM callback) |
 | Package Manager | `uv` (Astral), `npm` |
 
 ---
@@ -297,3 +314,5 @@ The most surprising finding was the quality of the `CuratorAgent` ranking. By ex
 - ✅ **Multi-Agent Pipeline** — Breaks complex reasoning into specialized agents (Digester, Curator, Writer).
 - ✅ **Personalization** — Dynamically alters output based on a structured user profile.
 - ✅ **State Management** — Uses a Repository pattern to save LLM outputs at intermediate steps.
+- ✅ **Model-Agnostic Design** — All agents use LiteLLM; switching from Gemini to Claude or GPT-4o requires changing one environment variable.
+- ✅ **Structured Output Enforcement** — `instructor` guarantees all agent responses are valid Pydantic objects, with automatic retries on malformed output.
