@@ -5,8 +5,8 @@ import os
 # Set global LiteLLM settings for Langfuse tracing
 # Litellm automatically detects the LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, 
 # and LANGFUSE_HOST from the environment variables.
-litellm.success_callback = ["langfuse"]
-litellm.failure_callback = ["langfuse"]
+# litellm.success_callback = ["langfuse"]  # Removed due to Langfuse v4 incompatibility
+# litellm.failure_callback = ["langfuse"]  # Removed due to Langfuse v4 incompatibility
 
 # Set the default model for all agents.
 # To switch models (e.g. to Claude), simply change the LLM_MODEL env var to "anthropic/claude-3-5-sonnet-20240620"
