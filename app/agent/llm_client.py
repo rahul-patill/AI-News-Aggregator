@@ -2,15 +2,16 @@ import litellm
 import instructor
 import os
 
-# Set global LiteLLM settings for Langfuse tracing
+# Set global LiteLLM settings for Langfuse tracing via OpenTelemetry
 # Litellm automatically detects the LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, 
 # and LANGFUSE_HOST from the environment variables.
-# litellm.success_callback = ["langfuse"]  # Removed due to Langfuse v4 incompatibility
-# litellm.failure_callback = ["langfuse"]  # Removed due to Langfuse v4 incompatibility
+
+litellm.success_callback = ["otel"]
+litellm.failure_callback = ["otel"]
 
 # Set the default model for all agents.
 # To switch models (e.g. to Claude), simply change the LLM_MODEL env var to "anthropic/claude-3-5-sonnet-20240620"
-DEFAULT_MODEL = os.getenv("LLM_MODEL", "gemini/gemini-2.5-flash")
+DEFAULT_MODEL = os.getenv("LLM_MODEL", "gemini/gemini-3.6-flash")
 
 def get_instructor_client():
     """

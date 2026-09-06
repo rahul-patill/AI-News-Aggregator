@@ -17,7 +17,7 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: LLM_MODEL
-        value: "gemini/gemini-2.5-flash"
+        value: "gemini/gemini-3.6-flash"
       - key: MY_EMAIL
         sync: false
       - key: APP_PASSWORD

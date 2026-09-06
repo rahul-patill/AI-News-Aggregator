@@ -58,6 +58,10 @@ def process_digests(limit: Optional[int] = None) -> dict:
         except Exception as e:
             failed += 1
             logger.error(f"✗ Error processing {article_type} {article_id}: {e}")
+            
+        # Add a 5-second delay to avoid hitting the 15 Requests Per Minute free-tier limit
+        import time
+        time.sleep(5)
     
     logger.info(f"Processing complete: {processed} processed, {failed} failed out of {total} total")
     
